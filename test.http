@@ -1,0 +1,8 @@
+POST http://localhost:8080/api/ratings
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "bookId": 1,
+  "rating": 5
+}
