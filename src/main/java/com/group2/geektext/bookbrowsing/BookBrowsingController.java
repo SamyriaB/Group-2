@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -70,6 +72,13 @@ public class BookBrowsingController {
     public List<Map<String, Object>> getBooksByRating(
             @RequestParam double rating) {
 
+        if (rating < 1 || rating > 5) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Rating must be between 1 and 5."
+            );
+        }
+
         String sql = """
                 SELECT
                     b.book_id,
@@ -104,7 +113,8 @@ public class BookBrowsingController {
             @RequestParam double discountPercent) {
 
         if (discountPercent < 0 || discountPercent > 100) {
-            throw new IllegalArgumentException(
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
                     "Discount percent must be between 0 and 100."
             );
         }
