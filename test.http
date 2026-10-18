@@ -1,0 +1,23 @@
+
+POST http://localhost:8080/api/ratings
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "bookId": 1,
+  "rating": 5
+}
+
+### Create a book comment
+POST http://localhost:8080/api/comments
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "bookId": 1,
+  "commentText": "I really enjoyed this book."
+}
+
+### Get comments for book 1
+GET http://localhost:8080/api/comments/book/1
+Accept: application/json
