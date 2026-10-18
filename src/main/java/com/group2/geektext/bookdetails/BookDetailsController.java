@@ -58,4 +58,21 @@ public class BookDetailsController {
         }
         return books.get(0);
     }
+
+    // 3 Retrieve all books by specific author
+    @GetMapping("/author/{authorId}")
+    public List<Map<String, Object>> getBooksByAuthor(@PathVariable Integer authorId) {
+        // First check if author exists, so we can send 404 instead of empty list
+        Boolean authorExists = jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM author WHERE author_id = ?)",
+                Boolean.class, authorId);
+
+        if (!Boolean.TRUE.equals(authorExists)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "No author found with ID " + authorId); // Sends 404 if author doesnt exist
+        }
+
+        return jdbcTemplate.queryForList(
+                BOOK_DETAILS_SQL + " WHERE b.author_id = ? ORDER BY b.book_name", authorId);
+    }
 }
