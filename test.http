@@ -1,4 +1,5 @@
 
+### Create a book rating
 POST http://localhost:8080/api/ratings
 Content-Type: application/json
 
@@ -21,3 +22,4 @@ Content-Type: application/json
 ### Get comments for book 1
 GET http://localhost:8080/api/comments/book/1
 Accept: application/json
+
