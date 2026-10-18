@@ -22,7 +22,7 @@ public class BookComment {
     private String commentText;
 
     @Column(name = "date_stamp", nullable = false)
-    private LocalDateTime dateStamp;
+    private LocalDateTime dateStamp = LocalDateTime.now();
 
     public BookComment() {
     }
