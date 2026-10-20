@@ -1,7 +1,11 @@
 package com.group2.geektext.shoppingcart;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,5 +42,36 @@ public class ShoppingCartController {
                 """;
 
         return jdbcTemplate.queryForList(sql, userId);
+    }
+
+    @PostMapping
+    public ResponseEntity<String> addBook(
+            @RequestParam int userId,
+            @RequestParam int bookId) {
+
+        if (userId <= 0 || bookId <= 0) {
+            return ResponseEntity.badRequest()
+                    .body("userId and bookId must be positive.");
+        }
+
+        String sql = """
+                INSERT INTO cart_item (user_id, book_id)
+                VALUES (?, ?)
+                """;
+
+        try {
+            jdbcTemplate.update(sql, userId, bookId);
+
+            return ResponseEntity.status(201)
+                    .body("Book added to cart.");
+
+        } catch (DuplicateKeyException e) {
+            return ResponseEntity.status(409)
+                    .body("Book is already in this user's cart.");
+
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest()
+                    .body("Unable to add book. Check that the user and book exist.");
+        }
     }
 }
