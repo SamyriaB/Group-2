@@ -38,4 +38,10 @@ public class BookReviewController {
                 .filter(comment -> comment.getBookId().equals(bookId))
                 .toList();
     }
+
+    @GetMapping("/ratings/book/{bookId}/average")
+    public Double getAverageRatingByBook(@PathVariable Integer bookId) {
+        return bookRatingRepository.findAverageRatingByBookId(bookId);
+    }
+
 }
