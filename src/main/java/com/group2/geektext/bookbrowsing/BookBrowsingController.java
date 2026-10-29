@@ -25,25 +25,42 @@ public class BookBrowsingController {
     // 1. Retrieve books by genre
     @GetMapping("/genre")
     public List<Map<String, Object>> getBooksByGenre(
-            @RequestParam String genre) {
+            @RequestParam(name = "genre", required = false) String genre) {
+
+        if (genre == null || genre.trim().isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Genre must not be empty or blank."
+            );
+        }
 
         String sql = """
-                SELECT
-                    b.book_id,
-                    b.isbn,
-                    b.book_name,
-                    b.book_description,
-                    b.price,
-                    b.year_published,
-                    b.copies_sold,
-                    g.genre_name
-                FROM book b
-                JOIN genre g ON b.genre_id = g.genre_id
-                WHERE LOWER(g.genre_name) = LOWER(?)
-                ORDER BY b.book_name
-                """;
+        SELECT
+            b.book_id,
+            b.isbn,
+            b.book_name,
+            b.book_description,
+            b.price,
+            b.year_published,
+            b.copies_sold,
+            g.genre_name
+        FROM book b
+        JOIN genre g ON b.genre_id = g.genre_id
+        WHERE LOWER(g.genre_name) = LOWER(?)
+        ORDER BY b.book_name
+        """;
 
-        return jdbcTemplate.queryForList(sql, genre);
+        List<Map<String, Object>> books =
+                jdbcTemplate.queryForList(sql, genre.trim());
+
+        if (books.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "No books found for genre: " + genre
+            );
+        }
+
+        return books;
     }
 
     // 2. Retrieve top 10 best-selling books
