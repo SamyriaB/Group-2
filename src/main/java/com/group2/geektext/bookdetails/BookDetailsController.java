@@ -1,4 +1,8 @@
 package com.group2.geektext.bookdetails;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.util.StringUtils;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -75,4 +79,31 @@ public class BookDetailsController {
         return jdbcTemplate.queryForList(
                 BOOK_DETAILS_SQL + " WHERE b.author_id = ? ORDER BY b.book_name", authorId);
     }
+
+    // 4 Create new author
+    @PostMapping("/authors")
+    @ResponseStatus(HttpStatus.CREATED) // Sends 201 when author is created
+    public void createAuthor(@RequestBody Author author) {
+        // First name, last name and publisher required
+        if (!StringUtils.hasText(author.firstName()) || !StringUtils.hasText(author.lastName())
+                || author.publisherId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "First name, last name and publisher ID are required");
+        }
+
+        // Check publisher exists, so we send 400 instead of database error
+        Boolean publisherExists = jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM publisher WHERE publisher_id = ?)",
+                Boolean.class, author.publisherId());
+
+        if (!Boolean.TRUE.equals(publisherExists)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "No publisher found with ID " + author.publisherId());
+        }
+
+        jdbcTemplate.update(
+                "INSERT INTO author (first_name, last_name, biography, publisher_id) VALUES (?, ?, ?, ?)",
+                author.firstName(), author.lastName(), author.biography(), author.publisherId());
+    }
+
 }
