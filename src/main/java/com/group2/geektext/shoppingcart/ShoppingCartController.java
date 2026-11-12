@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,37 @@ public class ShoppingCartController {
                 """;
 
         return jdbcTemplate.queryForList(sql, userId);
+    }
+
+    @GetMapping("/subtotal")
+    public ResponseEntity<?> getSubtotal(@RequestParam int userId) {
+
+        if (userId <= 0) {
+            return ResponseEntity.badRequest()
+                    .body("userId must be positive.");
+        }
+
+        String userSql = "SELECT COUNT(*) FROM users WHERE user_id = ?";
+
+        Integer userCount = jdbcTemplate.queryForObject(
+                userSql, Integer.class, userId);
+
+        if (userCount == null || userCount == 0) {
+            return ResponseEntity.status(404)
+                    .body("User not found.");
+        }
+
+        String sql = """
+                SELECT COALESCE(SUM(b.price), 0)
+                FROM cart_item c
+                JOIN book b ON c.book_id = b.book_id
+                WHERE c.user_id = ?
+                """;
+
+        BigDecimal subtotal = jdbcTemplate.queryForObject(
+                sql, BigDecimal.class, userId);
+
+        return ResponseEntity.ok(Map.of("subtotal", subtotal));
     }
 
     @PostMapping
