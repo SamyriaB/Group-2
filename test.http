@@ -23,3 +23,10 @@ Content-Type: application/json
 GET http://localhost:8080/api/comments/book/1
 Accept: application/json
 
+### Get average rating for book 1
+GET http://localhost:8080/api/ratings/book/1/average
+Accept: application/json
+
+### Get average rating for book 2
+GET http://localhost:8080/api/ratings/book/2/average
+Accept: application/json
