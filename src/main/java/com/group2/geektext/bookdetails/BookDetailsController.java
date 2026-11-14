@@ -15,6 +15,15 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 
+/*
+ * Book Details feature (owner: Tymur Budahov)
+ *
+ * POST /api/books    Create book
+ * GET /api/books/{isbn}     Get book details by ISBN
+ * POST /api/books/authors     Create author
+ * GET /api/books/author/{authorId}     Get books by author
+ */
+
 @RestController
 @RequestMapping("/api/books")
 public class BookDetailsController {
@@ -44,13 +53,7 @@ public class BookDetailsController {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    // 1 Retrieve all books with their details
-    @GetMapping
-    public List<Map<String, Object>> getAllBooks() {
-        return jdbcTemplate.queryForList(BOOK_DETAILS_SQL + " ORDER BY b.book_name");
-    }
-
-    // 2 Retrieve one book details by ISBN number
+    // 1 Retrieve one book details by ISBN number
     @GetMapping("/{isbn}")
     public Map<String, Object> getBookByIsbn(@PathVariable String isbn) {
         List<Map<String, Object>> books =
@@ -63,7 +66,7 @@ public class BookDetailsController {
         return books.get(0);
     }
 
-    // 3 Retrieve all books by specific author
+    // 2 Retrieve all books by specific author
     @GetMapping("/author/{authorId}")
     public List<Map<String, Object>> getBooksByAuthor(@PathVariable Integer authorId) {
         // First check if author exists, so we can send 404 instead of empty list
@@ -80,7 +83,7 @@ public class BookDetailsController {
                 BOOK_DETAILS_SQL + " WHERE b.author_id = ? ORDER BY b.book_name", authorId);
     }
 
-    // 4 Create new author
+    // 3 Create new author
     @PostMapping("/authors")
     @ResponseStatus(HttpStatus.CREATED) // Sends 201 when author is created
     public void createAuthor(@RequestBody Author author) {
@@ -104,6 +107,59 @@ public class BookDetailsController {
         jdbcTemplate.update(
                 "INSERT INTO author (first_name, last_name, biography, publisher_id) VALUES (?, ?, ?, ?)",
                 author.firstName(), author.lastName(), author.biography(), author.publisherId());
+    }
+
+
+    // 4 Create new book
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED) // Sends 201 when book is created
+    public void createBook(@RequestBody Book book) {
+        // ISBN, name, price, author, genre and publisher required
+        if (!StringUtils.hasText(book.isbn()) || !StringUtils.hasText(book.bookName())
+                || book.price() == null || book.authorId() == null
+                || book.genreId() == null || book.publisherId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "ISBN, book name, price, author ID, genre ID and publisher ID are required");
+        }
+
+        // Price cant be negative
+        if (book.price().signum() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price cannot be negative");
+        }
+
+        // ISBN must be unique, sends 409 if book already has it
+        if (exists("SELECT EXISTS (SELECT 1 FROM book WHERE isbn = ?)", book.isbn())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A book with ISBN " + book.isbn() + " already exists");
+        }
+
+        // Author, genre and publisher must exist, so we send 400 instead of database error
+        if (!exists("SELECT EXISTS (SELECT 1 FROM author WHERE author_id = ?)", book.authorId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No author found with ID " + book.authorId());
+        }
+        if (!exists("SELECT EXISTS (SELECT 1 FROM genre WHERE genre_id = ?)", book.genreId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No genre found with ID " + book.genreId());
+        }
+        if (!exists("SELECT EXISTS (SELECT 1 FROM publisher WHERE publisher_id = ?)", book.publisherId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No publisher found with ID " + book.publisherId());
+        }
+
+        jdbcTemplate.update("""
+                INSERT INTO book (isbn, book_name, book_description, price,
+                                  author_id, genre_id, publisher_id, year_published, copies_sold)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                book.isbn(), book.bookName(), book.bookDescription(), book.price(),
+                book.authorId(), book.genreId(), book.publisherId(), book.yearPublished(),
+                book.copiesSold() == null ? 0 : book.copiesSold()); // New book defaults to 0 sold
+    }
+
+    // Runs SELECT EXISTS query and returns true or false
+    private boolean exists(String sql, Object value) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(sql, Boolean.class, value));
     }
 
 }
